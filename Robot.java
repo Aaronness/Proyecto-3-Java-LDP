@@ -1,5 +1,7 @@
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.HashSet; 
+import java.util.Set;     
 
 public class Robot implements Runnable {
     private int identificador;
@@ -15,11 +17,13 @@ public class Robot implements Runnable {
     public void setX(int x){this.x= x;}
     public void setY(int y){this.y= y;}
     public void setTablero(Tablero tablero) {this.tablero = tablero;}
+    public void setCaja(Caja objetivo) { this.objetivo = objetivo;}
 
     public int getX() { return x; }
     public int getY() { return y; }
     public int getIdentificador() { return identificador;}
     public int getBateria() { return bateria;}
+    public Caja getCaja() { return objetivo;}
 
     
     public Robot(int identificador, int bateria, int x, int y, Tablero tablero) { // Constructorr del Robot
@@ -30,33 +34,30 @@ public class Robot implements Runnable {
         this.tablero = tablero;
     }
 
-public void calcularProximoMovimiento(){
+public void calcularProximoMovimiento() {
         char[][] estadoInicial = tablero.obtenerCopiaMatriz(); 
-        
-        // 1. Usamos la estructura permitida para la Cola
         Queue<EstadoBFS> cola = new LinkedList<>();
-
-        // 2. Mantenemos el arreglo tradicional para los visitados
-        String[] visitados = new String[50000];
-        int cantidadVisitados = 0;
-
+        
+        // Uso de HashSet para optimizar el rendimiento y permitir explorar muchos más estados
+        Set<String> visitados = new HashSet<>(); 
         int[][] direcciones = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
-        EstadoBFS nodoInicial = new EstadoBFS(this.x, this.y, estadoInicial, null);
-        
-        // Agregar a la cola y marcar como visitado
+        EstadoBFS nodoInicial = new EstadoBFS(this.x, this.y, estadoInicial, null, null);
         cola.add(nodoInicial);
-        visitados[cantidadVisitados] = nodoInicial.generarHash();
-        cantidadVisitados++;
+        visitados.add(nodoInicial.generarHash());
 
         while (!cola.isEmpty()) {
-            
-            // Extraer el primer elemento de la cola dinámica
             EstadoBFS actual = cola.poll();
 
-            // Condición de victoria
+            // 1. CONDICIÓN DE VICTORIA Y ASIGNACIÓN
             if (actual.matrizEstado[5][5] == 'O') {
                 this.proximoMovimiento = actual.primerMovimiento;
+                
+                // Si la ruta nos llevó al éxito y veníamos empujando una caja, la reclamamos
+                if (actual.cajaEnRuta != null) {
+                    actual.cajaEnRuta.setTieneRobot(true); // Bloqueamos la caja para otros
+                    this.objetivo = actual.cajaEnRuta;     // La guardamos como nuestro objetivo oficial
+                }
                 return;
             }
 
@@ -70,11 +71,13 @@ public void calcularProximoMovimiento(){
                 if (nx < 0 || nx > 5 || ny < 0 || ny > 5) continue;
 
                 char celdaDestino = actual.matrizEstado[nx][ny];
-
                 if (celdaDestino == 'R') continue;
 
                 char[][] nuevoTablero = actual.clonarTablero();
                 boolean movimientoValido = false;
+                
+                // Arrastramos la caja que el robot viene empujando en esta línea temporal
+                Caja cajaFutura = actual.cajaEnRuta; 
 
                 if (celdaDestino == '.') {
                     nuevoTablero[actual.robotX][actual.robotY] = '.';
@@ -82,6 +85,19 @@ public void calcularProximoMovimiento(){
                     movimientoValido = true;
                 } 
                 else if (celdaDestino == 'O' || celdaDestino == 'X') {
+                    
+                    // 2. REGLA DE EXCLUSIVIDAD AL CHOCAR CON UNA CAJA OBJETIVO
+                    if (celdaDestino == 'O' && cajaFutura == null) {
+                        cajaFutura = tablero.buscarCaja(nx, ny);
+                        
+                        if (cajaFutura != null) {
+                            // Si la caja ya tiene dueño y NO soy yo, este futuro es inválido
+                            if (cajaFutura.getTieneRobot() && cajaFutura != this.objetivo) {
+                                continue; // Se ignora este movimiento y se busca otra ruta
+                            }
+                        }
+                    }
+
                     int destCajaX = nx + dx;
                     int destCajaY = ny + dy;
 
@@ -104,30 +120,23 @@ public void calcularProximoMovimiento(){
                 if (movimientoValido) {
                     int[] primerMov = (actual.primerMovimiento == null) ? direcciones[i] : actual.primerMovimiento;
                     
-                    EstadoBFS nuevoEstado = new EstadoBFS(nx, ny, nuevoTablero, primerMov);
+                    // Guardamos la caja que estamos manipulando en el nuevo estado simulado
+                    EstadoBFS nuevoEstado = new EstadoBFS(nx, ny, nuevoTablero, primerMov, cajaFutura);
                     String hashNuevo = nuevoEstado.generarHash();
                     
-                    // Mantenemos la búsqueda lineal tradicional para los estados visitados
-                    boolean yaVisitado = false;
-                    for (int v = 0; v < cantidadVisitados; v++) {
-                        if (visitados[v].equals(hashNuevo)) { 
-                            yaVisitado = true;
-                            break;
+                    if (!visitados.contains(hashNuevo)) {
+                        if (visitados.size() < 50000) { // Nuevo límite ultra rápido
+                            visitados.add(hashNuevo);
+                            cola.add(nuevoEstado);
                         }
-                    }
-
-                    if (!yaVisitado) {
-                        // Evitar desbordamiento en el arreglo estático de visitados
-                        if (cantidadVisitados < visitados.length) {
-                            visitados[cantidadVisitados] = hashNuevo;
-                            cantidadVisitados++;
-                        }
-                        
-                        // Añadir a la cola de Java
-                        cola.add(nuevoEstado);
                     }
                 }
             }
+        }
+
+        if (this.objetivo != null) {
+            this.objetivo.setTieneRobot(false);
+            this.objetivo = null; 
         }
         
         this.proximoMovimiento = null;
@@ -135,9 +144,15 @@ public void calcularProximoMovimiento(){
     @Override
     public void run() {
         try {
-            while (bateria > 0) {
-                tablero.esperarPorCajasObjetivo();
+            int intentosFallidos = 0; // NUEVO: Contador para detectar si el robot está atrapado
+            while (bateria > 0 && tablero.estaActiva()) {
+
+                if(objetivo == null) tablero.esperarPorCajasObjetivo();
                 calcularProximoMovimiento();
+
+                if (!tablero.estaActiva()) {
+                    break;
+                }
 
                 if (this.proximoMovimiento != null) {
                     int deltaX = this.proximoMovimiento[0];
@@ -148,13 +163,26 @@ public void calcularProximoMovimiento(){
 
                     if (movimientoExitoso){
                         bateria--;
+                        intentosFallidos = 0;
+                    } else {
+                        intentosFallidos++;
                     }
+
+                } else {
+                    // ¡AQUÍ ESTABA EL ERROR! Falta sumar cuando el BFS devuelve null
+                    intentosFallidos++; 
                 }
-                Thread.sleep(300);
+                if (intentosFallidos >= 25) { // Esto hace que si ya no puede encontrar una ruta valida y no tenemos transportadora termine el juego
+                    tablero.registrarRobotRendido(this);
+                    bateria = -1; // Forzamos el agotamiento de la batería
+                    break; // Rompemos el bucle para que el robot muera
+                }
+                
+                Thread.sleep(300); // Simula tiempo de procesamiento y evita que el robot consuma CPU excesivamente
 
             }
-
-            System.out.println("[" + identificador + "] BATERIA AGOTADA -> Retiro del tablero");
+            
+            if(bateria == 0) tablero.registrarRobotAgotado(this);
 
         } catch (InterruptedException e) {
             System.out.println("Hilo del robot interrumpido.");

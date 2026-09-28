@@ -5,14 +5,15 @@ public class EstadoBFS {
     public int robotY;
     public char[][] matrizEstado;
     public int[] primerMovimiento;
+    public Caja cajaEnRuta;
 
-    public EstadoBFS(int robotX, int robotY, char[][] matrizEstado, int[] primerMovimiento) {
+    public EstadoBFS(int robotX, int robotY, char[][] matrizEstado, int[] primerMovimiento, Caja cajaEnRuta) {
         this.robotX = robotX;
         this.robotY = robotY;
         this.matrizEstado = matrizEstado;
         this.primerMovimiento = primerMovimiento;
+        this.cajaEnRuta = cajaEnRuta;
     }
-
     // 1. Método simplificado usando .clone()
     public char[][] clonarTablero() {
         char[][] copia = new char[6][];

@@ -27,7 +27,10 @@ public class Main {
         }
 
         int totalCajas = cajasObj + cajasBloq;
-
+        if(numRobots <= 0 || bateria <= 0 || (numProductores <= 0 && cajasObj <=0) || (totalCajas + numRobots > 36)) {
+            System.out.println("Error: error de configuración inicial.");
+            return;
+        }
 
         Robot[] arregloRobots = new Robot[numRobots];
         for (int i = 0; i < numRobots; i++) {
@@ -42,7 +45,7 @@ public class Main {
             arregloCajas[i] = new Caja(esObjetivo); 
         }
 
-        Tablero elTablero = new Tablero(arregloRobots, numRobots, totalCajas, arregloCajas);
+        Tablero elTablero = new Tablero(arregloRobots, numRobots, totalCajas, arregloCajas, numProductores);
 
         for (int i = 1; i <= numProductores; i++) {
             Transportadora t = new Transportadora(String.valueOf(i), elTablero);
@@ -72,7 +75,7 @@ public class Main {
         }
 
         elTablero.apagarFabrica();
-        // elTablero.imprimirReporte(); // Llama a tu método final aquí
+        elTablero.imprimirReporteFinal(); // Llama a tu método final aquí
 
     }
 }

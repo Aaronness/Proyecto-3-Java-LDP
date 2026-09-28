@@ -22,7 +22,7 @@ public class Transportadora implements Runnable {
                     cajaNueva = new Caja(false);
                 }
                 tablero.insertarCaja(cajaNueva, identificador);
-                Thread.sleep(1000);
+                Thread.sleep(600);
             }
         }catch (InterruptedException e) {
             // Es buena práctica restaurar el estado de interrupción del hilo
