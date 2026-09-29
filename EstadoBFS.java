@@ -14,7 +14,7 @@ public class EstadoBFS {
         this.primerMovimiento = primerMovimiento;
         this.cajaEnRuta = cajaEnRuta;
     }
-    // 1. Método simplificado usando .clone()
+
     public char[][] clonarTablero() {
         char[][] copia = new char[6][];
         for (int i = 0; i < 6; i++) {
@@ -22,8 +22,7 @@ public class EstadoBFS {
         }
         return copia;
     }
-    
-    // 2. Método simplificado usando Arrays.deepToString()
+
     public String generarHash() {
         return robotX + "," + robotY + "-" + Arrays.deepToString(matrizEstado);
     }

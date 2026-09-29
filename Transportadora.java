@@ -25,7 +25,7 @@ public class Transportadora implements Runnable {
                 Thread.sleep(600);
             }
         }catch (InterruptedException e) {
-            // Es buena práctica restaurar el estado de interrupción del hilo
+
             Thread.currentThread().interrupt();
         }
         

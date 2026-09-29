@@ -53,17 +53,17 @@ public class Main {
             Thread hiloT = new Thread(t);
             hiloT.start();
         }
-        // 1 y 2. Vincular el tablero real a los robots y arrancar sus hilos
+        // Vincular el tablero real a los robots y arrancar sus hilos
         Thread[] hilosRobots = new Thread[numRobots];
 
         for (int i = 0; i < numRobots; i++) {
-            arregloRobots[i].setTablero(elTablero); // Requiere que tengas el método setTablero() en la clase Robot
+            arregloRobots[i].setTablero(elTablero); 
             
             hilosRobots[i] = new Thread(arregloRobots[i]);
             hilosRobots[i].start();
         }
 
-        // 3. Sincronización final: El Main espera a que los robots mueran
+        // Sincronización final: El Main espera a que los robots mueran
         try {
 
             for (int i = 0; i < numRobots; i++) {
@@ -75,7 +75,7 @@ public class Main {
         }
 
         elTablero.apagarFabrica();
-        elTablero.imprimirReporteFinal(); // Llama a tu método final aquí
+        elTablero.imprimirReporteFinal(); 
 
     }
 }

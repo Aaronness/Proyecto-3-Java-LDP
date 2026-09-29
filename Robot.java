@@ -11,7 +11,6 @@ public class Robot implements Runnable {
     private Tablero tablero;
     private Caja objetivo;
 
-    // Atributo para guardar el próximo movimiento calculado por el BFS
     private int[] proximoMovimiento;
 
     public void setX(int x){this.x= x;}
@@ -38,7 +37,6 @@ public void calcularProximoMovimiento() {
         char[][] estadoInicial = tablero.obtenerCopiaMatriz(); 
         Queue<EstadoBFS> cola = new LinkedList<>();
         
-        // Uso de HashSet para optimizar el rendimiento y permitir explorar muchos más estados
         Set<String> visitados = new HashSet<>(); 
         int[][] direcciones = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
@@ -49,14 +47,14 @@ public void calcularProximoMovimiento() {
         while (!cola.isEmpty()) {
             EstadoBFS actual = cola.poll();
 
-            // 1. CONDICIÓN DE VICTORIA Y ASIGNACIÓN
+            // condicion victoria 
             if (actual.matrizEstado[5][5] == 'O') {
                 this.proximoMovimiento = actual.primerMovimiento;
                 
                 // Si la ruta nos llevó al éxito y veníamos empujando una caja, la reclamamos
                 if (actual.cajaEnRuta != null) {
                     actual.cajaEnRuta.setTieneRobot(true); // Bloqueamos la caja para otros
-                    this.objetivo = actual.cajaEnRuta;     // La guardamos como nuestro objetivo oficial
+                    this.objetivo = actual.cajaEnRuta;    
                 }
                 return;
             }
@@ -75,8 +73,7 @@ public void calcularProximoMovimiento() {
 
                 char[][] nuevoTablero = actual.clonarTablero();
                 boolean movimientoValido = false;
-                
-                // Arrastramos la caja que el robot viene empujando en esta línea temporal
+
                 Caja cajaFutura = actual.cajaEnRuta; 
 
                 if (celdaDestino == '.') {
@@ -86,12 +83,11 @@ public void calcularProximoMovimiento() {
                 } 
                 else if (celdaDestino == 'O' || celdaDestino == 'X') {
                     
-                    // 2. REGLA DE EXCLUSIVIDAD AL CHOCAR CON UNA CAJA OBJETIVO
                     if (celdaDestino == 'O' && cajaFutura == null) {
                         cajaFutura = tablero.buscarCaja(nx, ny);
                         
                         if (cajaFutura != null) {
-                            // Si la caja ya tiene dueño y NO soy yo, este futuro es inválido
+                            // Si la caja ya tiene dueño y NO soy yo, esta ruta es invalida
                             if (cajaFutura.getTieneRobot() && cajaFutura != this.objetivo) {
                                 continue; // Se ignora este movimiento y se busca otra ruta
                             }
@@ -125,7 +121,7 @@ public void calcularProximoMovimiento() {
                     String hashNuevo = nuevoEstado.generarHash();
                     
                     if (!visitados.contains(hashNuevo)) {
-                        if (visitados.size() < 50000) { // Nuevo límite ultra rápido
+                        if (visitados.size() < 50000) { //limite
                             visitados.add(hashNuevo);
                             cola.add(nuevoEstado);
                         }
@@ -144,7 +140,7 @@ public void calcularProximoMovimiento() {
     @Override
     public void run() {
         try {
-            int intentosFallidos = 0; // NUEVO: Contador para detectar si el robot está atrapado
+            int intentosFallidos = 0; 
             while (bateria > 0 && tablero.estaActiva()) {
 
                 if(objetivo == null) tablero.esperarPorCajasObjetivo();
@@ -158,7 +154,6 @@ public void calcularProximoMovimiento() {
                     int deltaX = this.proximoMovimiento[0];
                     int deltaY = this.proximoMovimiento[1];
 
-                    // Pasamos 'this' (el robot actual) y los deltas calculados
                     boolean movimientoExitoso = tablero.intentarMovimiento(this, deltaX, deltaY);
 
                     if (movimientoExitoso){
@@ -169,16 +164,15 @@ public void calcularProximoMovimiento() {
                     }
 
                 } else {
-                    // ¡AQUÍ ESTABA EL ERROR! Falta sumar cuando el BFS devuelve null
                     intentosFallidos++; 
                 }
                 if (intentosFallidos >= 25) { // Esto hace que si ya no puede encontrar una ruta valida y no tenemos transportadora termine el juego
                     tablero.registrarRobotRendido(this);
-                    bateria = -1; // Forzamos el agotamiento de la batería
+                    bateria = -1; 
                     break; // Rompemos el bucle para que el robot muera
                 }
                 
-                Thread.sleep(300); // Simula tiempo de procesamiento y evita que el robot consuma CPU excesivamente
+                Thread.sleep(300); // Simula tiempo de procesamiento 
 
             }
             

@@ -99,7 +99,6 @@ public class Tablero {
         System.out.println("\n=== ESTADO FINAL DEL TABLERO ===");
         for (int i = 0; i < 6; i++) {
             for (int j = 0; j < 6; j++) {
-                // Se imprime cada casilla separada por un espacio para que se vea como una cuadrícula
                 System.out.print(matriz[i][j] + " ");
             }
             System.out.println();
@@ -146,7 +145,6 @@ public class Tablero {
 
     public synchronized void imprimirLog(String identificador, String accion) {
         // String.format("%02d", tickActual) formatea el número para que sea 01, 02, etc., 
-        // tal como muestran los ejemplos de trazas esperadas.
         String tickFormateado = String.format("%02d", tickActual);
     
         System.out.println("[Tick-" + tickFormateado + "] [" + identificador + "] " + accion);
@@ -157,10 +155,10 @@ public class Tablero {
     // MÉTODO DEL PRODUCTOR
     public synchronized void insertarCaja(Caja nuevaCaja, String idProductor) throws InterruptedException {
         
-        // REGLA DE ABORTO: Si la fábrica ya fue apagada por otro hilo, no hacemos nada.
+        // Si la fábrica ya fue apagada por otro hilo, no hacemos nada.
         if (!simulacionActiva) return;
 
-        // NUEVA REGLA: Si hay 36 cosas, o si hay 35 y la única libre es la meta (5,5), el productor espera.
+        // Si hay 36 cosas, o si hay 35 y la única libre es la meta (5,5), el productor espera.
         while (casillasOcupadas >= 36 || (casillasOcupadas == 35 && matriz[5][5] == '.')) {
             
             // Registrar la saturación antes de entrar en espera
@@ -188,17 +186,15 @@ public class Tablero {
         char simbolo = nuevaCaja.obtenerSimbolo();
         matriz[fila][col] = simbolo;    
 
-        // Actualizar las coordenadas de la caja 
         nuevaCaja.moverA(fila, col);
 
-        // Actualizar las variables de estado del monitor
         casillasOcupadas++;
         if (nuevaCaja.getObjetivo()) {
             cajasObjetivoDisponibles++;
         }
 
         listaCajasActivas.add(nuevaCaja);
-        // Imprimir la traza de ejecución obligatoria
+
         String tipoCaja = nuevaCaja.getObjetivo() ? "OBJETIVO" : "BLOQUEO";
         imprimirLog(idProductor, "INSERTAR_" + tipoCaja + " -> (" + fila + "," + col + ")");
 
@@ -251,7 +247,7 @@ public class Tablero {
                 robot.setX(destinoX);
                 robot.setY(destinoY);
             
-                listaCajasActivas.remove(caja); // Borramos la caja de la lista
+                listaCajasActivas.remove(caja); 
                 robot.setCaja(null);
                 casillasOcupadas--;
                 cajasObjetivoDisponibles--;
@@ -310,7 +306,7 @@ public class Tablero {
             }
 
         }
-        // Movimiento inválido 
+        // Movimiento invalido(No es ninguna de las otras opciones)
         return false;
 
     }   
